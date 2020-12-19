@@ -2,27 +2,27 @@ package ua.edu.sumdu.elit.in71.birintsev.services.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.StdConverter;
 import io.quickchart.QuickChart;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import javax.imageio.ImageIO;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import org.springframework.stereotype.Service;
+import ua.edu.sumdu.elit.in71.birintsev.ClassBitmap;
 import ua.edu.sumdu.elit.in71.birintsev.CriteriaValue;
-import ua.edu.sumdu.elit.in71.birintsev.services.MathService;
+import ua.edu.sumdu.elit.in71.birintsev.services.ClassBitmapService;
 import ua.edu.sumdu.elit.in71.birintsev.services.StatisticVisualizationService;
+import ua.edu.sumdu.elit.in71.birintsev.services.impl.quickchart.QuickChartPlotRequest;
 import static ua.edu.sumdu.elit.in71.birintsev.services.impl.RecognizerTrainerImpl.CALCULATION_LOGGER;
 
 @Service
@@ -30,7 +30,16 @@ import static ua.edu.sumdu.elit.in71.birintsev.services.impl.RecognizerTrainerIm
 public class StatisticVisualizationServiceImpl
 implements StatisticVisualizationService {
 
-    private final MathService mathService;
+    //private final MathService mathService;
+
+    private final ClassBitmapService classBitmapService;
+
+    public static final String IMAGES_FORMAT = "bmp";
+
+    public static final String STATISTIC_OUTPUT_DIRECTORY_NAME =
+        "ImageRecognitionStatistic";
+
+    private static final int PIXELS_REFERENCE_VECTOR_HEIGHT = 50;
 
     @Override
     public URL createWorkspacePlot(
@@ -50,6 +59,53 @@ implements StatisticVisualizationService {
         return send(
             buildRequestForMarginCorridor(topBorder, mean, bottomBorder)
         );
+    }
+
+    @Override
+    public URL visualizeBitmap(
+        ClassBitmap classBitmap
+    ) {
+        try {
+            return writeMatrix(
+                createMatrix(
+                    classBitmap.getBitmap()
+                ),
+                defaultOutputFileFor(
+                    classBitmap,
+                    "_bitmap_"
+                        + System.currentTimeMillis()
+                        + "." + IMAGES_FORMAT
+                )
+                    .getAbsolutePath()
+            );
+        } catch (IOException e) {
+            CALCULATION_LOGGER.error(e);
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @Override
+    public URL visualizeReferenceVectorOf(
+        ClassBitmap classBitmap
+    ) {
+        try {
+            return writeMatrix(
+                createMatrix(
+                    classBitmapService.referenceVectorFor(classBitmap)
+                ),
+                defaultOutputFileFor(
+                    classBitmap,
+                    "_reference_vector_"
+                        + System.currentTimeMillis()
+                        + "."
+                        + IMAGES_FORMAT
+                )
+                    .getAbsolutePath()
+            );
+        } catch (IOException e) {
+            CALCULATION_LOGGER.error(e);
+            throw new UncheckedIOException(e);
+        }
     }
 
     private URL send(QuickChartPlotRequest request) {
@@ -147,375 +203,72 @@ implements StatisticVisualizationService {
         );
     }
 
-    @Override
-    public URL visualizeBitmap(
-        boolean[][] bitmap
-    ) {
-        try {
-            return new URL("https://example.com");
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            throw new UncheckedIOException(e);
-        }
+    private URL writeMatrix(BufferedImage matrix, String fileName)
+    throws IOException {
+        File file = new File(fileName);
+        ImageIO.write(
+            matrix,
+            "bmp",
+            file
+        );
+        return file.toURI().toURL();
     }
 
-    @Override
-    public URL visualizeReferenceVector(
-        boolean[] vector,
-        int height
+    private File defaultOutputFileFor(
+        ClassBitmap classBitmap,
+        String fileNameSuffix
     ) {
-        try {
-            return new URL("https://example.com");
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            throw new UncheckedIOException(e);
+        File originalImageFile =
+            classBitmap
+                .getRecognitionClass()
+                .getImageFile();
+        File statisticDirectory = new File(
+            originalImageFile.getParent(),
+            STATISTIC_OUTPUT_DIRECTORY_NAME
+        );
+        if (!statisticDirectory.isDirectory() && statisticDirectory.mkdir()) {
+            CALCULATION_LOGGER.info(
+                "Statistic output directory has been created: "
+                    + statisticDirectory
+            );
         }
+        return new File(
+            statisticDirectory,
+            originalImageFile.getName() + fileNameSuffix
+        );
     }
 
-    // request POJOs
-    @Data
-    private static final class QuickChartPlotRequest {
-
-        @JsonSerialize(converter = EnumToStringSerializer.class)
-        private Type type;
-
-        private Data data;
-
-        private Options options;
-
-        public QuickChartPlotRequest(
-            double[] topBorder,
-            double[] mean,
-            double[] bottomBorder,
-            String plotTitle
-        ) {
-            this.type = Type.LINE;
-            this.data = new Data(
-                topBorder,
-                mean,
-                bottomBorder
-            );
-            this.options = new Options(
-                new Options.Scales(
-                    Collections.singletonList(
-                        new Options.Axe(
-                            true,
-                            new Options.Axe.ScaleLabel(
-                                true,
-                                "Features"
-                            ),
-                            (double) 0,
-                            (double) mean.length - 1
-                        )
-                    ),
-                    Collections.singletonList(
-                        new Options.Axe(
-                            true,
-                            new Options.Axe.ScaleLabel(
-                                true,
-                                "Margin"
-                            ),
-                            Arrays.stream(bottomBorder).min().orElse(-1),
-                            Arrays.stream(topBorder).max().orElse(101)
-                        )
-                    )
-                ),
-                new Options.Title(
-                    true,
-                    plotTitle
-                )
-            );
-        }
-
-        /**
-         * Constructor for generating workspace plot
-         *
-         * @see StatisticVisualizationServiceImpl#createWorkspacePlot(Map)
-         * */
-        public QuickChartPlotRequest(
-            List<Integer> xValues,
-            List<Double> criteriaValues,
-            List<Boolean> isWorkspace,
-            String datasetLabel
-        ) {
-            this.type = Type.LINE;
-            this.data = new Data(
-                xValues,
-                criteriaValues,
-                filterWorkspaceValues(
-                    criteriaValues,
-                    isWorkspace
-                ),
-                datasetLabel
-            );
-            this.options = new Options(
-                new Options.Scales(
-                    Collections.singletonList(
-                        new Options.Axe(
-                            true,
-                            new Options.Axe.ScaleLabel(
-                                true,
-                                "Margin"
-                            ),
-                            (double) xValues.get(0),
-                            (double) xValues.get(xValues.size() - 1)
-                        )
-                    ),
-                    Collections.singletonList(
-                        new Options.Axe(
-                            true,
-                            new Options.Axe.ScaleLabel(
-                                true,
-                                "Criteria"
-                            ),
-                            (double) xValues.get(0),
-                            (double) xValues.get(xValues.size() - 1)
-                        )
-                    )
-                ),
-                null
-            );
-        }
-
-        private List<Double> filterWorkspaceValues(
-            List<Double> criteriaValues,
-            List<Boolean> isWorkspace
-        ) {
-            List<Double> workspaceCriteriaValues = new ArrayList<>(
-                criteriaValues.size()
-            );
-            for (int i = 0; i < criteriaValues.size(); i++) {
-                workspaceCriteriaValues
-                    .add(isWorkspace.get(i) ? criteriaValues.get(i) : null);
-            }
-            return workspaceCriteriaValues;
-        }
-
-        @lombok.Data
-        private static class Data {
-
-            private List<String> labels;
-
-            private List<DataSet> datasets;
-
-            /**
-             * Constructor for generating Margin corridor plot
-             *
-             * @see StatisticVisualizationServiceImpl#createWorkspacePlot(Map)
-             * */
-            public Data(
-                double[] topBorder,
-                double[] mean,
-                double[] bottomBorder
-            ) {
-                labels = IntStream
-                    .range(0, mean.length)
-                    .boxed()
-                    .map(
-                        Object::toString
-                    )
-                    .collect(
-                        Collectors.toList()
-                    );
-                datasets = Arrays.asList(
-                    new DataSet( // top border
-                        Arrays.stream(topBorder)
-                            .boxed()
-                            .collect(
-                                Collectors.toList()
-                            ),
-                        DataSet.COLOR_TRANSPARENT,
-                        DataSet.COLOR_MAIN,
-                        "Top border",
-                        DataSet.Fill.FALSE,
-                        DataSet.NO_POINTS_RADIUS
-                    ),
-                    new DataSet( // mean line
-                        Arrays.stream(mean)
-                            .boxed()
-                            .collect(
-                                Collectors.toList()
-                            ),
-                        DataSet.COLOR_TRANSPARENT,
-                        DataSet.COLOR_SECONDARY,
-                        "Mean",
-                        DataSet.Fill.START,
-                        DataSet.NO_POINTS_RADIUS
-                    ),
-                    new DataSet( // bottom border
-                        Arrays.stream(bottomBorder)
-                            .boxed()
-                            .collect(
-                                Collectors.toList()
-                            ),
-                        DataSet.COLOR_TRANSPARENT,
-                        DataSet.COLOR_MAIN,
-                        "Bottom border",
-                        DataSet.Fill.FALSE,
-                        DataSet.NO_POINTS_RADIUS
-                    )
-                );
-            }
-
-            /**
-             * Constructor for generating workspace plot
-             *
-             * @see StatisticVisualizationServiceImpl#createWorkspacePlot(Map)
-             * */
-            public Data(
-                List<Integer> xValues,
-                List<Double> allCriteriaValues,
-                List<Double> workspaceCriterias,
-                String datasetLabel
-            ) {
-                labels = xValues
-                    .stream()
-                    .map(Object::toString)
-                    .collect(Collectors.toList());
-                datasets = Arrays.asList(
-                    new DataSet( // all criteria values
-                        allCriteriaValues,
-                        null,
-                        DataSet.COLOR_BORDER,
-                        datasetLabel,
-                        DataSet.Fill.FALSE,
-                        DataSet.NO_POINTS_RADIUS
-                    ),
-                    new DataSet( // workspace color fill
-                        workspaceCriterias,
-                        DataSet.COLOR_WORKSPACE,
-                        DataSet.COLOR_TRANSPARENT,
-                        "Workspace",
-                        DataSet.Fill.START,
-                        DataSet.DEFAULT_POINTS_RADIUS
-                    )
+    private BufferedImage createMatrix(boolean[][] matrix) {
+        Color primaryColor = Color.decode(
+            QuickChartPlotRequest.DataSet.COLOR_PRIMARY
+        );
+        Color secondaryColor = Color.decode(
+            QuickChartPlotRequest.DataSet.COLOR_SECONDARY
+        );
+        BufferedImage bufferedImage = new BufferedImage(
+            matrix[0].length,
+            matrix.length,
+            BufferedImage.TYPE_INT_RGB
+        );
+        for (int y = 0, i = 0; y < bufferedImage.getHeight(); y++, i++) {
+            for (int x = 0, j = 0; x < bufferedImage.getWidth(); x++, j++) {
+                bufferedImage.setRGB(
+                    x,
+                    y,
+                    (matrix[i][j] ? primaryColor : secondaryColor).getRGB()
                 );
             }
         }
-
-        @lombok.Data
-        @AllArgsConstructor
-        private static class DataSet {
-
-            public static final String COLOR_MAIN = "#9999ff";
-
-            public static final String COLOR_SECONDARY = "#fff70d";
-
-            public static final String COLOR_TRANSPARENT = "transparent";
-
-            public static final String COLOR_BORDER = COLOR_SECONDARY;
-
-            public static final String COLOR_WORKSPACE = COLOR_MAIN;
-
-            public static final int DEFAULT_POINTS_RADIUS = 5;
-
-            public static final int NO_POINTS_RADIUS = 0;
-
-            private List<Double> data;
-
-            private String backgroundColor;
-
-            private String borderColor;
-
-            private String label;
-
-            @JsonSerialize(converter = EnumToStringSerializer.class)
-            private Fill fill;
-
-            private int pointRadius;
-
-            private enum Fill {
-
-                START("start"),
-                END("end"),
-                ORIGIN("origin"),
-                FALSE("false");
-
-                private final String fill;
-
-                Fill(String fill) {
-                    this.fill = fill;
-                }
-
-                @Override
-                public String toString() {
-                    return fill;
-                }
-            }
-        }
-
-        private enum Type {
-
-            LINE("line");
-
-            private final String type;
-
-            Type(String type) {
-                this.type = type;
-            }
-
-            @Override
-            public String toString() {
-                return type;
-            }
-        }
-
-        @AllArgsConstructor
-        @lombok.Data
-        private static final class Options {
-
-            private Scales scales;
-
-            private Title title;
-
-            @AllArgsConstructor
-            @lombok.Data
-            public static class Title {
-
-                private boolean display;
-
-                private String text;
-            }
-
-            @AllArgsConstructor
-            @lombok.Data
-            private static class Scales {
-
-                private List<Axe> xAxes;
-
-                private List<Axe> yAxes;
-            }
-
-            @lombok.Data
-            @AllArgsConstructor
-            private static class Axe {
-
-                private boolean display;
-
-                private ScaleLabel scaleLabel;
-
-                private Double min;
-
-                private Double max;
-
-                @lombok.Data
-                @AllArgsConstructor
-                private static class ScaleLabel {
-
-                    private boolean display;
-
-                    private String labelString;
-                }
-            }
-        }
+        return bufferedImage;
     }
 
-    private static class EnumToStringSerializer<T extends Enum<?>>
-        extends StdConverter<T, String> {
-
-        @Override
-        public String convert(T value) {
-            return value.toString();
+    private BufferedImage createMatrix(
+        boolean[] vector
+    ) {
+        boolean[][] matrix = new boolean[PIXELS_REFERENCE_VECTOR_HEIGHT][];
+        for (int i = 0; i < PIXELS_REFERENCE_VECTOR_HEIGHT; i++) {
+            matrix[i] = Arrays.copyOf(vector, vector.length);
         }
+        return createMatrix(matrix);
     }
 }

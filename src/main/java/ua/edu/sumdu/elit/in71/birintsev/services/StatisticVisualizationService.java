@@ -3,6 +3,7 @@ package ua.edu.sumdu.elit.in71.birintsev.services;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Map;
+import ua.edu.sumdu.elit.in71.birintsev.ClassBitmap;
 import ua.edu.sumdu.elit.in71.birintsev.CriteriaValue;
 
 public interface StatisticVisualizationService {
@@ -42,10 +43,10 @@ public interface StatisticVisualizationService {
      * The method actually maps {@code false}s to black elements
      * (e.g. pixels) and {@code true}s to white elements.
      *
-     * @param  bitmap a bitmap to visualize
-     * @return        a location of created resource
+     * @param  classBitmap a bitmap to visualize
+     * @return             a location of created resource
      * */
-    URL visualizeBitmap(boolean[][] bitmap);
+    URL visualizeBitmap(ClassBitmap classBitmap);
 
     /**
      * Creates a black&white resource (e.g. an image) that represents
@@ -54,9 +55,8 @@ public interface StatisticVisualizationService {
      * The method actually maps {@code false}s to black elements
      * (e.g. pixels) and {@code true}s to white elements.
      *
-     * @param  vector a reference vector to visualize
-     * @param  height a height of resulting resource
-     * @return        a location of created resource
+     * @param  classBitmap a class which reference vector to visualize
+     * @return             a location of created resource
      * */
-    URL visualizeReferenceVector(boolean[] vector, int height);
+    URL visualizeReferenceVectorOf(ClassBitmap classBitmap);
 }

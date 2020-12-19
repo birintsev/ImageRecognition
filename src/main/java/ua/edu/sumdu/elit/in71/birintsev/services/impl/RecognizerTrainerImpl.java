@@ -143,74 +143,54 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
         Map<Integer, Collection<CriteriaValue>> source,
         Set<CriteriaValue> bestCriterias
     ) {
-        CriteriaValue someBestCriteria =
-            bestCriterias
-                .stream()
-                .findAny()
-                .orElseThrow(
-                    () -> new RuntimeException(
-                        "Empty bestCriterias. " +
-                            "Expected non-empty collection (training result)"
-                    )
-                );
-        int commonMargin =
-            someBestCriteria
-                .getNeighbourClasses()
-                .getClassBitmap()
-                .getMargin();
-        RecognitionClass baseClass =
-            someBestCriteria
-                .getNeighbourClasses()
-                .getClassBitmap()
-                .getBaseClass();
-        ClassBitmap baseClassBitmap =
-            classBitmapService.createFor(
-                baseClass,
-                baseClass,
-                commonMargin
-            );
-        double[] baseClassMean = mathService.mean(
-            baseClassBitmap
-                .getRecognitionClass()
-                .getGrayScaleImage()
-        );
-        // base class reference vector visualization
-        URL bestCriteriasPlotURL = statisticVisualizationService
-            .visualizeReferenceVector(
-                classBitmapService.referenceVectorFor(
-                    baseClassBitmap
-                ),
-                someBestCriteria
-                    .getNeighbourClasses()
-                    .getClassBitmap()
-                    .getBitmap()
-                    .length
-            );
-        // base class bitmap visualization
-        URL baseClassBitmapPlotURL = statisticVisualizationService
-            .visualizeBitmap(
-                baseClassBitmap.getBitmap()
-            );
-        // console output
+        // workspace plot
         CALCULATION_LOGGER.info(
             "Workspace plot: "
                 + statisticVisualizationService.createWorkspacePlot(
-                    source
-                )
-                + System.lineSeparator()
-                + "Margin corridor plot: "
-                + statisticVisualizationService.createMarginCorridorPlot(
-                    mathService.plus(baseClassMean, commonMargin),
-                    baseClassMean,
-                    mathService.plus(baseClassMean, -commonMargin)
-                )
-                + System.lineSeparator()
-                + "Best criterias plot: "
-                + bestCriteriasPlotURL
-                + System.lineSeparator()
-                + "Base class bitmap: "
-                + baseClassBitmapPlotURL
+                source
+            )
         );
+        // bitmaps and reference vectors of class for study
+        for (CriteriaValue criteriaValue : bestCriterias) {
+            int margin =
+                criteriaValue
+                    .getNeighbourClasses()
+                    .getClassBitmap()
+                    .getMargin();
+            RecognitionClass recognitionClass =
+                criteriaValue
+                    .getNeighbourClasses()
+                    .getClassBitmap()
+                    .getRecognitionClass();
+            RecognitionClass baseClass =
+                criteriaValue
+                    .getNeighbourClasses()
+                    .getClassBitmap()
+                    .getBaseClass();
+            ClassBitmap classBitmap =
+                classBitmapService.createFor(
+                    recognitionClass,
+                    baseClass,
+                    margin
+                );
+            CALCULATION_LOGGER.info(
+                "Class of image: ["
+                    + recognitionClass.getImageFile().getAbsolutePath()
+                    + "]"
+                    + System.lineSeparator()
+                    // base class reference vector visualization
+                    + "Reference vector: "
+                    + statisticVisualizationService.visualizeReferenceVectorOf(
+                        classBitmap
+                    )
+                    + System.lineSeparator()
+                    // base class bitmap visualization
+                    + "Class bitmap: "
+                    + statisticVisualizationService.visualizeBitmap(
+                        classBitmap
+                    )
+            );
+        }
     }
 
     private double secondsSince(long startTime) {
