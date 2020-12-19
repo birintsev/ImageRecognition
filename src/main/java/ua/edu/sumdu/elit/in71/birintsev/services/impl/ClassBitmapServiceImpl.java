@@ -1,13 +1,17 @@
 package ua.edu.sumdu.elit.in71.birintsev.services.impl;
 
-import java.util.Arrays;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import ua.edu.sumdu.elit.in71.birintsev.ClassBitmap;
 import ua.edu.sumdu.elit.in71.birintsev.RecognitionClass;
 import ua.edu.sumdu.elit.in71.birintsev.services.ClassBitmapService;
+import ua.edu.sumdu.elit.in71.birintsev.services.MathService;
 
 @Service
+@AllArgsConstructor
 public class ClassBitmapServiceImpl implements ClassBitmapService {
+
+    private final MathService mathService;
 
     @Override
     public ClassBitmap createFor(
@@ -15,9 +19,12 @@ public class ClassBitmapServiceImpl implements ClassBitmapService {
         RecognitionClass baseClass,
         int margin
     ) {
-        double[] geometricalClassCenter = mean(baseClass);
-        double[] topBorder = plus(geometricalClassCenter, margin);
-        double[] bottomBorder = plus(geometricalClassCenter, -margin);
+        double[] geometricalClassCenter =
+            mathService.mean(baseClass.getGrayScaleImage());
+        double[] topBorder =
+            mathService.plus(geometricalClassCenter, margin);
+        double[] bottomBorder =
+            mathService.plus(geometricalClassCenter, -margin);
         boolean[][] bitmap = bitmap(bottomBorder, topBorder, recognitionClass);
         return new ClassBitmap(
             recognitionClass,
@@ -60,6 +67,7 @@ public class ClassBitmapServiceImpl implements ClassBitmapService {
         ) <= radius;
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     private boolean[] referenceVectorFor(
         boolean[][] bitmap
     ) {
@@ -74,26 +82,6 @@ public class ClassBitmapServiceImpl implements ClassBitmapService {
             referenceVector[j] = truesCount > bitmap.length / 2;
         }
         return referenceVector;
-    }
-
-    private double[] mean(RecognitionClass recognitionClass) {
-        int[][] matrix = recognitionClass.getGrayScaleImage();
-        if (matrix.length == 0) {
-            return new double[0];
-        }
-        double[] mean = new double[matrix[0].length];
-        for (int j = 0; j < matrix[0].length; j++) {
-            double columnSum = 0;
-            for (int i = 0; i < matrix.length; i++) {
-                columnSum += matrix[i][j];
-            }
-            mean[j] = columnSum / matrix.length;
-        }
-        return mean;
-    }
-
-    private double[] plus(double[] array, double number) {
-        return Arrays.stream(array).map(e -> e + number).toArray();
     }
 
     /**
@@ -148,7 +136,9 @@ public class ClassBitmapServiceImpl implements ClassBitmapService {
         for (int i = 0; i < image.length; i++) {
             bitmap[i] = new boolean[image[i].length];
             for (int j = 0; j < image[i].length; j++) {
-                bitmap[i][j] = image[i][j] > bottomBorder[j] && image[i][j] < topBorder[j];
+                bitmap[i][j] =
+                    image[i][j] > bottomBorder[j]
+                        && image[i][j] < topBorder[j];
             }
         }
         return bitmap;

@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import ua.edu.sumdu.elit.in71.birintsev.CriteriaValue;
 import ua.edu.sumdu.elit.in71.birintsev.NeighbourClasses;
 import ua.edu.sumdu.elit.in71.birintsev.RecognitionClass;
 import ua.edu.sumdu.elit.in71.birintsev.services.ClassBitmapService;
+import ua.edu.sumdu.elit.in71.birintsev.services.MathService;
 import ua.edu.sumdu.elit.in71.birintsev.services.NeighbourService;
 import ua.edu.sumdu.elit.in71.birintsev.services.Recognizer;
 import ua.edu.sumdu.elit.in71.birintsev.services.RecognizerTrainer;
@@ -41,17 +43,21 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
 
     private final CriteriaMethod criteriaMethod;
 
+    private final MathService mathService;
+
     public RecognizerTrainerImpl(
         ClassBitmapService classBitmapService,
         NeighbourService neighbourService,
         @Qualifier("CulbacCriteria")
             CriteriaMethod criteriaMethod,
-        StatisticVisualizationService statisticVisualizationService
+        StatisticVisualizationService statisticVisualizationService,
+        MathService mathService
     ) {
         this.classBitmapService = classBitmapService;
         this.neighbourService = neighbourService;
         this.criteriaMethod = criteriaMethod;
         this.statisticVisualizationService = statisticVisualizationService;
+        this.mathService = mathService;
     }
 
     @Override
@@ -138,65 +144,74 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
         Map<Integer, Collection<CriteriaValue>> source,
         Set<CriteriaValue> bestCriterias
     ) {
-        // workspace plot
-        CALCULATION_LOGGER.info(
-            statisticVisualizationService.createWorkspacePlot(
-                source
-            )
-        );
-        bestCriterias
-            .stream()
-            .findAny()
-            .ifPresent(
-                criteriaValue -> {
-                    URL baseClassBitmapPlotURL;
-                    URL bestCriteriasPlotURL;
-                    RecognitionClass bsClss =
-                        criteriaValue
-                            .getNeighbourClasses()
-                            .getClassBitmap()
-                            .getBaseClass();
-                    // base class reference vector visualization
-                    bestCriteriasPlotURL = statisticVisualizationService
-                        .visualizeReferenceVector(
-                            classBitmapService.referenceVectorFor(
-                                classBitmapService.createFor(
-                                    bsClss,
-                                    bsClss,
-                                    criteriaValue
-                                        .getNeighbourClasses()
-                                        .getClassBitmap()
-                                        .getMargin()
-                                )
-                            ),
-                            criteriaValue
-                                .getNeighbourClasses()
-                                .getClassBitmap()
-                                .getBitmap()
-                                .length
-                        );
-                    // base class bitmap visualization
-                    baseClassBitmapPlotURL = statisticVisualizationService
-                        .visualizeBitmap(
-                            classBitmapService.createFor(
-                                bsClss,
-                                bsClss,
-                                criteriaValue
-                                    .getNeighbourClasses()
-                                    .getClassBitmap()
-                                    .getMargin()
-                            )
-                                .getBitmap()
-                        );
-                    CALCULATION_LOGGER.info(
-                        "Best criterias plot: "
-                            + bestCriteriasPlotURL
-                            + System.lineSeparator()
-                            + "Base class bitmap: "
-                            + baseClassBitmapPlotURL
-                    );
-                }
+        CriteriaValue someBestCriteria =
+            bestCriterias
+                .stream()
+                .findAny()
+                .orElseThrow(
+                    () -> new RuntimeException(
+                        "Empty bestCriterias. " +
+                            "Expected non-empty collection (training result)"
+                    )
+                );
+        int commonMargin =
+            someBestCriteria
+                .getNeighbourClasses()
+                .getClassBitmap()
+                .getMargin();
+        RecognitionClass baseClass =
+            someBestCriteria
+                .getNeighbourClasses()
+                .getClassBitmap()
+                .getBaseClass();
+        ClassBitmap baseClassBitmap =
+            classBitmapService.createFor(
+                baseClass,
+                baseClass,
+                commonMargin
             );
+        double[] baseClassMean = mathService.mean(
+            baseClassBitmap
+                .getRecognitionClass()
+                .getGrayScaleImage()
+        );
+        // base class reference vector visualization
+        URL bestCriteriasPlotURL = statisticVisualizationService
+            .visualizeReferenceVector(
+                classBitmapService.referenceVectorFor(
+                    baseClassBitmap
+                ),
+                someBestCriteria
+                    .getNeighbourClasses()
+                    .getClassBitmap()
+                    .getBitmap()
+                    .length
+            );
+        // base class bitmap visualization
+        URL baseClassBitmapPlotURL = statisticVisualizationService
+            .visualizeBitmap(
+                baseClassBitmap.getBitmap()
+            );
+        // console output
+        CALCULATION_LOGGER.info(
+            "Workspace plot: "
+                + statisticVisualizationService.createWorkspacePlot(
+                    source
+                )
+                + System.lineSeparator()
+                + "Margin corridor plot: "
+                + statisticVisualizationService.createMarginCorridorPlot(
+                    mathService.plus(baseClassMean, commonMargin),
+                    baseClassMean,
+                    mathService.plus(baseClassMean, -commonMargin)
+                )
+                + System.lineSeparator()
+                + "Best criterias plot: "
+                + bestCriteriasPlotURL
+                + System.lineSeparator()
+                + "Base class bitmap: "
+                + baseClassBitmapPlotURL
+        );
     }
 
     private double secondsSince(long startTime) {

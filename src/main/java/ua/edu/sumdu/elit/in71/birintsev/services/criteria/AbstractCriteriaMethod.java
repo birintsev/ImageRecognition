@@ -5,7 +5,6 @@ import ua.edu.sumdu.elit.in71.birintsev.ClassBitmap;
 import ua.edu.sumdu.elit.in71.birintsev.CriteriaValue;
 import ua.edu.sumdu.elit.in71.birintsev.NeighbourClasses;
 import ua.edu.sumdu.elit.in71.birintsev.services.ClassBitmapService;
-import static ua.edu.sumdu.elit.in71.birintsev.services.impl.RecognizerTrainerImpl.CALCULATION_LOGGER;
 
 @AllArgsConstructor
 public abstract class AbstractCriteriaMethod implements CriteriaMethod {
@@ -19,23 +18,24 @@ public abstract class AbstractCriteriaMethod implements CriteriaMethod {
         double minDistinguishPercentage
     ) {
         boolean[][] clazz =
-            hypersphereNeighbourClasses.getClassBitmap().getBitmap();
+            hypersphereNeighbourClasses
+                .getClassBitmap()
+                .getBitmap();
         boolean[][] neighbour =
-            hypersphereNeighbourClasses.getNeighbourClassBitmap().getBitmap();
-        //long t = System.currentTimeMillis();
+            hypersphereNeighbourClasses
+                .getNeighbourClassBitmap()
+                .getBitmap();
         double d1 = belongPercent(
             clazz,
             hypersphereNeighbourClasses.getClassBitmap(),
             radius
         );
-        //CALCULATION_LOGGER.trace("d1 took " + (System.currentTimeMillis() - t) + "ms");
         double d2 = notBelongPercent(
             neighbour,
             hypersphereNeighbourClasses.getClassBitmap(),
             radius
         );
         double criteria = calc(d1, d2);
-        //CALCULATION_LOGGER.error("(" + d1 + ";" + d2 + ")=" + criteria);
         return new CriteriaValue(
             radius,
             hypersphereNeighbourClasses,
@@ -46,6 +46,18 @@ public abstract class AbstractCriteriaMethod implements CriteriaMethod {
         );
     }
 
+    /**
+     * Counts the criteria value
+     *
+     * @param d1 a percentage of <strong>current</strong> class
+     *           implementations that belong
+     *           to current class
+     *           with current radius
+     * @param d2 a percentage of <strong>neighbour</strong> class
+     *           implementations that <strong>do not</strong> belong
+     *           to current class
+     *           with current radius
+     * */
     public abstract double calc(double d1, double d2);
 
     private boolean belongsToWorkspace(
@@ -53,7 +65,8 @@ public abstract class AbstractCriteriaMethod implements CriteriaMethod {
         double d2,
         double minDistinguishPercentage
     ) {
-        return d1 >= minDistinguishPercentage && d2 >= minDistinguishPercentage;
+        return d1 >= minDistinguishPercentage
+            && d2 >= minDistinguishPercentage;
     }
 
     private double belongPercent( // >= 70ms
@@ -82,10 +95,5 @@ public abstract class AbstractCriteriaMethod implements CriteriaMethod {
         int radius
     ) {
         return 1 - belongPercent(implementations, classBitmap, radius);
-    }
-
-    // returns the base 2 logarithm of the passed number
-    protected double log2(double number) {
-        return Math.log10(number) / Math.log10(2);
     }
 }

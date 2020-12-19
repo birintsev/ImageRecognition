@@ -3,6 +3,7 @@ package ua.edu.sumdu.elit.in71.birintsev.services;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Map;
+import ua.edu.sumdu.elit.in71.birintsev.ClassBitmap;
 import ua.edu.sumdu.elit.in71.birintsev.CriteriaValue;
 
 public interface StatisticVisualizationService {
@@ -11,7 +12,7 @@ public interface StatisticVisualizationService {
      * Builds a plot of criteria values and returns
      *
      * @param  source         source data for plot creation.
-     *                        this parameter represents margins
+     *                        this parameter represents margin values
      *                        mapped to criteria values
      *                        for each recognition class
      * @return                a location of created plot
@@ -26,6 +27,8 @@ public interface StatisticVisualizationService {
      * @param mean a center of the corridor
      * @param bottomBorder a bottom border of the corridor
      * @param topBorder a bottom border of the corridor
+     *
+     * @return a location of created plot
      * */
     URL createMarginCorridorPlot(
         double[] bottomBorder,
