@@ -20,7 +20,6 @@ import java.util.stream.IntStream;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.stereotype.Service;
-import ua.edu.sumdu.elit.in71.birintsev.ClassBitmap;
 import ua.edu.sumdu.elit.in71.birintsev.CriteriaValue;
 import ua.edu.sumdu.elit.in71.birintsev.services.MathService;
 import ua.edu.sumdu.elit.in71.birintsev.services.StatisticVisualizationService;

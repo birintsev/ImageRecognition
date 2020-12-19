@@ -3,7 +3,6 @@ package ua.edu.sumdu.elit.in71.birintsev.services;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Map;
-import ua.edu.sumdu.elit.in71.birintsev.ClassBitmap;
 import ua.edu.sumdu.elit.in71.birintsev.CriteriaValue;
 
 public interface StatisticVisualizationService {

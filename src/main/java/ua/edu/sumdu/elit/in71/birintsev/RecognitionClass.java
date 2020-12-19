@@ -20,6 +20,10 @@ import org.opencv.imgproc.Imgproc;
 @Setter
 public class RecognitionClass {
 
+    /**
+     * See <a href="https://stackoverflow.com/questions/13428689/whats-the-difference-between-cvtype-values-in-opencv">this Stackoverflow question</a>
+     * for more information
+     * */
     public static final int MAX_MARGIN = maxGrayscalePixelValue() / 2;
 
     private static final int CVTYPE = CvType.CV_8U;
@@ -33,7 +37,13 @@ public class RecognitionClass {
     }
 
     /**
-     * This method loads OpenCV library. See how to use OpenCV in a java project
+     * This method loads OpenCV library.
+     *
+     * Make sure, that this native library is available
+     * during runtime ({@code java.library.path}
+     * {@link System#getProperty(String) system property})
+     * <p>
+     * See how to use OpenCV in a java project
      * <a href="https://opencv-java-tutorials.readthedocs.io/en/latest/01-installing-opencv-for-java.html">here</a>
      * */
     private static void loadOpenCVNativeLib() {
@@ -43,6 +53,7 @@ public class RecognitionClass {
     private static int maxGrayscalePixelValue() {
         int maxGrayscalePixelValue;
         switch (CVTYPE) {
+            //noinspection ConstantConditions
             case CvType.CV_8U:
                 maxGrayscalePixelValue = 0xFF;
                 break;
