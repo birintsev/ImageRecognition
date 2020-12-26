@@ -1,5 +1,7 @@
 package ua.edu.sumdu.elit.in71.birintsev.services.impl;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -62,10 +64,16 @@ public class NeighbourServiceImpl implements NeighbourService {
         ClassBitmap class1,
         ClassBitmap class2
     ) {
-        return countDistanceBetweenReferenceVectors(
-            classBitmapService.referenceVectorFor(class1),
-            classBitmapService.referenceVectorFor(class2)
-        );
+        int distance;
+        if (class1.equals(class2)) {
+            distance = 0;
+        } else {
+            distance = countDistanceBetweenReferenceVectors(
+                classBitmapService.referenceVectorFor(class1),
+                classBitmapService.referenceVectorFor(class2)
+            );
+        }
+        return distance;
     }
 
     private int countDistanceBetweenReferenceVectors(
@@ -73,5 +81,29 @@ public class NeighbourServiceImpl implements NeighbourService {
         boolean[] rv2
     ) {
         return classBitmapService.countDistanceBetweenVectors(rv1, rv2);
+    }
+
+    @Override
+    public Map<ClassBitmap, Map<ClassBitmap, Integer>>
+    getCodeDistancesMatrix(Set<ClassBitmap> classes) {
+        Map<ClassBitmap, Map<ClassBitmap, Integer>> matrix = new HashMap<>();
+        for (ClassBitmap row : classes) { // creating empty matrix rows
+            matrix.put(row, new HashMap<>());
+        }
+        for (ClassBitmap row : classes) { // filling the matrix
+            for (ClassBitmap col : classes) {
+                int distanceBetweenClasses;
+                if (matrix.get(row).get(col) != null) {
+                    continue;
+                }
+                distanceBetweenClasses = countDistanceBetweenClassCenters(
+                    row,
+                    col
+                );
+                matrix.get(row).put(col, distanceBetweenClasses);
+                matrix.get(col).put(row, distanceBetweenClasses);
+            }
+        }
+        return matrix;
     }
 }

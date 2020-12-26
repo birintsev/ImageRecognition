@@ -33,7 +33,6 @@ public class MathServiceImpl implements MathService {
         return Arrays.stream(array).map(e -> e + number).toArray();
     }
 
-
     /**
      * {@inheritDoc}
      * */

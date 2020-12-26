@@ -1,15 +1,26 @@
 package ua.edu.sumdu.elit.in71.birintsev.services.impl;
 
+import com.inamik.text.tables.Cell;
+import com.inamik.text.tables.GridTable;
+import com.inamik.text.tables.grid.Border;
+import com.inamik.text.tables.grid.Util;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintStream;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
-import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.io.output.WriterOutputStream;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -24,6 +35,12 @@ import ua.edu.sumdu.elit.in71.birintsev.services.Recognizer;
 import ua.edu.sumdu.elit.in71.birintsev.services.RecognizerTrainer;
 import ua.edu.sumdu.elit.in71.birintsev.services.StatisticVisualizationService;
 import ua.edu.sumdu.elit.in71.birintsev.services.criteria.CriteriaMethod;
+import static com.inamik.text.tables.Cell.Functions.BOTTOM_ALIGN;
+import static com.inamik.text.tables.Cell.Functions.HORIZONTAL_CENTER;
+import static com.inamik.text.tables.Cell.Functions.LEFT_ALIGN;
+import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
+import static com.inamik.text.tables.Cell.Functions.TOP_ALIGN;
+import static com.inamik.text.tables.Cell.Functions.VERTICAL_CENTER;
 
 @Service
 public class RecognizerTrainerImpl implements RecognizerTrainer {
@@ -47,7 +64,7 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
     public RecognizerTrainerImpl(
         ClassBitmapService classBitmapService,
         NeighbourService neighbourService,
-        @Qualifier("CulbacCriteria")
+        @Qualifier("ShannonCriteria")
             CriteriaMethod criteriaMethod,
         StatisticVisualizationService statisticVisualizationService,
         MathService mathService
@@ -143,6 +160,20 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
         Map<Integer, Collection<CriteriaValue>> source,
         Set<CriteriaValue> bestCriterias
     ) {
+        // code distances matrix
+        Map<ClassBitmap, Map<ClassBitmap, Integer>> codeDistanceMatrix =
+            neighbourService
+                .getCodeDistancesMatrix(
+                    bestCriterias
+                        .stream()
+                        .map(
+                            cv -> cv.getNeighbourClasses().getClassBitmap()
+                        )
+                        .collect(
+                            Collectors.toSet()
+                        )
+                );
+        printCodeDistancesMatrix(codeDistanceMatrix);
         // workspace plot
         CALCULATION_LOGGER.info(
             "Workspace plot: "
@@ -190,6 +221,85 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
                         classBitmap
                     )
             );
+        }
+    }
+
+    // this method is responsible for code distances matrix output format
+    private void printCodeDistancesMatrix(
+        Map<ClassBitmap, Map<ClassBitmap, Integer>> matrix
+    ) {
+        List<ClassBitmap> classBitmaps =
+            matrix
+                .keySet()
+                .stream()
+                .sorted(
+                    Comparator.comparing(
+                        classBitmap ->
+                            classBitmap
+                                .getRecognitionClass()
+                                .getImageFile()
+                                .getAbsolutePath()
+                    )
+                )
+                .collect(
+                    Collectors.toList()
+                );
+        int matrixSize = classBitmaps.size() + 1;
+        GridTable table = GridTable.of(matrixSize, matrixSize);
+        // filling in rows and cols headers
+        for (int i = 1; i < matrixSize; i++) {
+            Collection<String> cell = Cell.of(
+                classBitmaps.get(i - 1)
+                    .getRecognitionClass()
+                    .getImageFile()
+                    .getName()
+            );
+            table.put( // columns headers
+                0,
+                i,
+                cell
+            );
+            table.put( // rows headers
+                i,
+                0,
+                cell
+            );
+        }
+        // filling in code distances
+        for (int i = 1; i < table.numRows(); i++) {
+            for (int j = 1; j < table.numCols(); j++) {
+                table.put(
+                    i,
+                    j,
+                    Cell.of(
+                        matrix
+                            .get(
+                                classBitmaps.get(i - 1)
+                            )
+                            .get(
+                                classBitmaps.get(j - 1)
+                            )
+                            .toString()
+                    )
+                );
+            }
+        }
+        table = Border.SINGLE_LINE.apply(table);
+        try (
+            StringWriter stringWriter = new StringWriter();
+            PrintStream printStream = new PrintStream(
+                new WriterOutputStream(
+                    stringWriter,
+                    Charset.defaultCharset()
+                ),
+                true
+            )
+        ) {
+            Util.print(table, printStream);
+            CALCULATION_LOGGER.info("" + System.lineSeparator() + stringWriter);
+        } catch (IOException e) {
+            CALCULATION_LOGGER.error(e);
+            throw new UncheckedIOException(e);
         }
     }
 
