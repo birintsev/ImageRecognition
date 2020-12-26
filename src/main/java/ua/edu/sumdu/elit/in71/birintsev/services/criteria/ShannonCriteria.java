@@ -31,14 +31,12 @@ public class ShannonCriteria extends AbstractCriteriaMethod {
         double D1 = d1    / (betta + d1);
         double D2 = d2    / (alpha + d2);
 
-        double result = 1 + 0.5 * (
+        return  1 + 0.5 * (
                   zeroIfNotFinite(A  * mathService.log2(A))
                 + zeroIfNotFinite(D1 * mathService.log2(D1))
                 + zeroIfNotFinite(B  * mathService.log2(B))
                 + zeroIfNotFinite(D2 * mathService.log2(D2))
             );
-        CALCULATION_LOGGER.info("(" + d1 + ", " + d2 + ") = " + result);
-        return result;
     }
 
     // returns non-NaN value (or 0 if value=Double.NaN)
