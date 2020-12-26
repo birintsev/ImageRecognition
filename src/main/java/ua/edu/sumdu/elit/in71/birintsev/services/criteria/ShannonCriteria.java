@@ -3,7 +3,6 @@ package ua.edu.sumdu.elit.in71.birintsev.services.criteria;
 import org.springframework.stereotype.Service;
 import ua.edu.sumdu.elit.in71.birintsev.services.ClassBitmapService;
 import ua.edu.sumdu.elit.in71.birintsev.services.MathService;
-import static ua.edu.sumdu.elit.in71.birintsev.services.impl.RecognizerTrainerImpl.CALCULATION_LOGGER;
 
 @Service("ShannonCriteria")
 public class ShannonCriteria extends AbstractCriteriaMethod {
