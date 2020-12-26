@@ -6,13 +6,11 @@ import com.inamik.text.tables.grid.Border;
 import com.inamik.text.tables.grid.Util;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,12 +33,6 @@ import ua.edu.sumdu.elit.in71.birintsev.services.Recognizer;
 import ua.edu.sumdu.elit.in71.birintsev.services.RecognizerTrainer;
 import ua.edu.sumdu.elit.in71.birintsev.services.StatisticVisualizationService;
 import ua.edu.sumdu.elit.in71.birintsev.services.criteria.CriteriaMethod;
-import static com.inamik.text.tables.Cell.Functions.BOTTOM_ALIGN;
-import static com.inamik.text.tables.Cell.Functions.HORIZONTAL_CENTER;
-import static com.inamik.text.tables.Cell.Functions.LEFT_ALIGN;
-import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
-import static com.inamik.text.tables.Cell.Functions.TOP_ALIGN;
-import static com.inamik.text.tables.Cell.Functions.VERTICAL_CENTER;
 
 @Service
 public class RecognizerTrainerImpl implements RecognizerTrainer {
@@ -59,8 +51,6 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
 
     private final CriteriaMethod criteriaMethod;
 
-    private final MathService mathService;
-
     public RecognizerTrainerImpl(
         ClassBitmapService classBitmapService,
         NeighbourService neighbourService,
@@ -73,7 +63,6 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
         this.neighbourService = neighbourService;
         this.criteriaMethod = criteriaMethod;
         this.statisticVisualizationService = statisticVisualizationService;
-        this.mathService = mathService;
     }
 
     @Override
