@@ -40,9 +40,49 @@ public interface ClassBitmapService {
      * Checks if passed binary vector (a class implementation)
      * belongs to the hypersphere
      * */
-    boolean belongsToHypersphere(
-        boolean[] implementation,
-        ClassBitmap classBitmap,
+    boolean belongsToHypersphere(  // todo    method signature contains
+        boolean[] implementation,  // todo    parameters of different
+        ClassBitmap classBitmap,   // todo    abstraction levels
         int radius
     );
+
+    /**
+     * Counts a percent of {@code implementations} that belong to a hypersphere
+     * with a center equal to reference vector of the {@code classBitmap}
+     * and radius = {@code radius}
+     *
+     * @param implementations a set of tested implementations
+     * @param classBitmap     a class bitmap for calculation a reference vector
+     *                        (hypersphere center)
+     * @param radius          a hypersphere radius
+     * @return                a number [0...1] that shows
+     *                        how much implementations from passed 2D-array
+     *                        belong to the hypersphere
+     * */
+    double belongPercent(
+        boolean[][] implementations, // todo    method signature contains
+        ClassBitmap classBitmap,     // todo    parameters of different
+        int radius                   // todo    abstraction levels
+    );
+
+    /**
+     * A method-antonym for {@link #belongPercent}
+     * <p>
+     * See the description of {@link #belongPercent the correlated method}
+     *
+     * @param implementations a set of tested implementations
+     * @param classBitmap     a class bitmap for calculation a reference vector
+     *                        (hypersphere center)
+     * @param radius          a hypersphere radius
+     * @return                a number [0...1] that shows
+     *                        how much implementations from passed 2D-array
+     *                        <strong>do not</strong> belong to the hypersphere
+     * */
+    default double notBelongPercent(
+        boolean[][] implementations, // todo    method signature contains
+        ClassBitmap classBitmap,     // todo    parameters of different
+        int radius                   // todo    abstraction levels
+    ) {
+        return 1 - belongPercent(implementations, classBitmap, radius);
+    }
 }

@@ -67,6 +67,27 @@ public class ClassBitmapServiceImpl implements ClassBitmapService {
         ) <= radius;
     }
 
+    @Override
+    public double belongPercent( // >= 70ms
+      boolean[][] implementations,
+      ClassBitmap classBitmap,
+      int radius
+    ) {
+        int belongsCount = 0;
+        for (boolean[] row : implementations) {
+            if (
+                belongsToHypersphere(
+                    row,
+                    classBitmap,
+                    radius
+                )
+            ) {
+                belongsCount++;
+            }
+        }
+        return ((double) belongsCount) / implementations.length;
+    }
+
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private boolean[] referenceVectorFor(
         boolean[][] bitmap

@@ -148,6 +148,7 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
         return new RecognizerImpl(bestCriterias, classBitmapService);
     }
 
+    // todo use inamik-text-tables instead of plain text console output
     private void visualizeStatistic(
         Map<Integer, Collection<CriteriaValue>> source,
         Set<CriteriaValue> bestCriterias
@@ -231,22 +232,76 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
                     + recognitionClass.getImageFile().getAbsolutePath()
                     + "]"
                     + System.lineSeparator()
-                    // base class reference vector visualization
-                    + "Reference vector: "
+                // base class reference vector visualization
+                + "Reference vector: "
                     + statisticVisualizationService.visualizeReferenceVectorOf(
                         classBitmap
                     )
                     + System.lineSeparator()
-                    // base class bitmap visualization
-                    + "Class bitmap: "
+                // base class bitmap visualization
+                + "Class bitmap: "
                     + statisticVisualizationService.visualizeBitmap(
                         classBitmap
                     )
-                    // radius optimization plot
-                    + "Radius optimization plot: "
+                    + System.lineSeparator()
+                // radius optimization plot
+                + "Radius optimization plot: "
                     + statisticVisualizationService.createWorkspaceRadiusPlot(
                         criteriaValue
                     )
+                + "Optimal radius: "
+                    + criteriaValue.getRadius()
+                    + System.lineSeparator()
+                // delta
+                + "Optimal margin (\u1df5): "
+                    + criteriaValue
+                        .getNeighbourClasses()
+                        .getClassBitmap()
+                        .getMargin()
+                    + System.lineSeparator()
+                + "Distance to neighbour class center ("
+                    + criteriaValue
+                        .getNeighbourClasses()
+                        .getNeighbourClassBitmap()
+                        .getRecognitionClass()
+                        .getImageFile()
+                        .getName()
+                        + ") "
+                        + criteriaValue
+                            .getNeighbourClasses()
+                            .getDistance()
+                        + System.lineSeparator()
+                // D1
+                + "The first reliability (D\u2081): "
+                    + classBitmapService.belongPercent(
+                        criteriaValue              // [The first reliability]
+                            .getNeighbourClasses() // [D1] is a percent
+                            .getClassBitmap()      // of current hypersphere
+                            .getBitmap(),          // implementations that
+                        criteriaValue              // belong to current
+                            .getNeighbourClasses() // hypersphere
+                            .getClassBitmap(),
+                        criteriaValue
+                            .getRadius()
+                    )
+                    + System.lineSeparator()
+                // betta
+                + "Type 2 inaccuracy (\u03b2): "
+                    + classBitmapService.belongPercent( // [Inaccuracy type 2]
+                        criteriaValue                   // [betta] is a percent
+                            .getNeighbourClasses()      // of neighbour's
+                            .getNeighbourClassBitmap()  // implementations that
+                            .getBitmap(),               // belong to current
+                        criteriaValue                   // hypersphere
+                            .getNeighbourClasses()
+                            .getClassBitmap(),
+                        criteriaValue
+                            .getRadius()
+                    )
+                    + System.lineSeparator()
+                + criteriaValue.getCriteriaMethod().getMethodName()
+                    + ": "
+                    + criteriaValue.getCriteria()
             );
         }
     }

@@ -43,10 +43,29 @@ class RecognizerImpl implements Recognizer {
             .collect(
                 Collectors.toMap(
                     cv -> cv,
-                    criteriaValue -> countMembershipFunction(
-                        testedClassBitmap,
-                        criteriaValue
-                    )
+                    criteriaValue -> {
+                        double membershipFunction = countMembershipFunction(
+                            testedClassBitmap,
+                            criteriaValue
+                        );
+                        CALCULATION_LOGGER.info(
+                            "Membership function ("
+                                + testedClassBitmap
+                                    .getRecognitionClass()
+                                    .getImageFile()
+                                    .getName()
+                                + " to "
+                                + criteriaValue
+                                    .getNeighbourClasses()
+                                    .getClassBitmap()
+                                    .getRecognitionClass()
+                                    .getImageFile()
+                                    .getName()
+                                + ") = "
+                                + membershipFunction
+                        );
+                        return membershipFunction;
+                    }
                 )
             )
             .entrySet()

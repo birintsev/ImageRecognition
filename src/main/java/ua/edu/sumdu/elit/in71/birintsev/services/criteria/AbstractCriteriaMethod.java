@@ -1,7 +1,6 @@
 package ua.edu.sumdu.elit.in71.birintsev.services.criteria;
 
 import lombok.AllArgsConstructor;
-import ua.edu.sumdu.elit.in71.birintsev.ClassBitmap;
 import ua.edu.sumdu.elit.in71.birintsev.CriteriaValue;
 import ua.edu.sumdu.elit.in71.birintsev.NeighbourClasses;
 import ua.edu.sumdu.elit.in71.birintsev.services.ClassBitmapService;
@@ -25,12 +24,12 @@ public abstract class AbstractCriteriaMethod implements CriteriaMethod {
             hypersphereNeighbourClasses
                 .getNeighbourClassBitmap()
                 .getBitmap();
-        double d1 = belongPercent(
+        double d1 = classBitmapService.belongPercent(
             clazz,
             hypersphereNeighbourClasses.getClassBitmap(),
             radius
         );
-        double d2 = notBelongPercent(
+        double d2 = classBitmapService.notBelongPercent(
             neighbour,
             hypersphereNeighbourClasses.getClassBitmap(),
             radius
@@ -69,31 +68,5 @@ public abstract class AbstractCriteriaMethod implements CriteriaMethod {
             && d2 >= minDistinguishPercentage;
     }
 
-    private double belongPercent( // >= 70ms
-        boolean[][] implementations,
-        ClassBitmap classBitmap,
-        int radius
-    ) {
-        int belongsCount = 0;
-        for (boolean[] row : implementations) {
-            if (
-                classBitmapService.belongsToHypersphere(
-                    row,
-                    classBitmap,
-                    radius
-                )
-            ) {
-                belongsCount++;
-            }
-        }
-        return ((double) belongsCount) / implementations.length;
-    }
 
-    private double notBelongPercent(
-        boolean[][] implementations,
-        ClassBitmap classBitmap,
-        int radius
-    ) {
-        return 1 - belongPercent(implementations, classBitmap, radius);
-    }
 }
