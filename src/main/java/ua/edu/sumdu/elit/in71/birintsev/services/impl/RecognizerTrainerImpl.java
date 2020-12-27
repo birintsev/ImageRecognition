@@ -51,6 +51,8 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
 
     private final CriteriaMethod criteriaMethod;
 
+    private final MathService mathService;
+
     public RecognizerTrainerImpl(
         ClassBitmapService classBitmapService,
         NeighbourService neighbourService,
@@ -63,6 +65,7 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
         this.neighbourService = neighbourService;
         this.criteriaMethod = criteriaMethod;
         this.statisticVisualizationService = statisticVisualizationService;
+        this.mathService = mathService;
     }
 
     @Override
@@ -149,6 +152,25 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
         Map<Integer, Collection<CriteriaValue>> source,
         Set<CriteriaValue> bestCriterias
     ) {
+        RecognitionClass baseClass =
+            bestCriterias
+                .stream()
+                .findAny()
+                .orElseThrow(
+                    () -> new RuntimeException("No criterias found")
+                )
+                .getNeighbourClasses()
+                .getClassBitmap()
+                .getBaseClass();
+        int margin = bestCriterias
+            .stream()
+            .findAny()
+            .orElseThrow(
+                () -> new RuntimeException("No criterias found")
+            )
+            .getNeighbourClasses()
+            .getClassBitmap()
+            .getMargin();
         // code distances matrix
         Map<ClassBitmap, Map<ClassBitmap, Integer>> codeDistanceMatrix =
             neighbourService
@@ -170,23 +192,34 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
                 source
             )
         );
+        // margin corridor plot
+        CALCULATION_LOGGER.info(
+            "Margin corridor: "
+                + statisticVisualizationService.createMarginCorridorPlot(
+                classBitmapService.createFor(
+                    baseClass,
+                    baseClass,
+                    margin
+                )
+            )
+        );
         // bitmaps and reference vectors of class for study
         for (CriteriaValue criteriaValue : bestCriterias) {
-            int margin =
+            /*int margin =
                 criteriaValue
                     .getNeighbourClasses()
                     .getClassBitmap()
-                    .getMargin();
+                    .getMargin();*/
             RecognitionClass recognitionClass =
                 criteriaValue
                     .getNeighbourClasses()
                     .getClassBitmap()
                     .getRecognitionClass();
-            RecognitionClass baseClass =
+            /*RecognitionClass baseClass =
                 criteriaValue
                     .getNeighbourClasses()
                     .getClassBitmap()
-                    .getBaseClass();
+                    .getBaseClass();*/
             ClassBitmap classBitmap =
                 classBitmapService.createFor(
                     recognitionClass,
@@ -340,9 +373,35 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
         Set<CriteriaValue> set1,
         Set<CriteriaValue> set2
     ) {
+        int workspaceComparingResult;
+        int avgCriteriaValueComparingResult;
         if (set1.isEmpty() || set2.isEmpty()) {
             return set1.isEmpty() ? set2 : set1;
         }
+        Comparator<Set<CriteriaValue>> workspacesComparator =
+            new Comparator<Set<CriteriaValue>>() {
+                @Override
+                public int compare(
+                    Set<CriteriaValue> s1,
+                    Set<CriteriaValue> s2
+                ) {
+                    return Integer.compare(
+                        belongToWorkspace(s1),
+                        belongToWorkspace(s2)
+                    );
+                }
+
+                // counts how much elements that belong to workspace
+                private int belongToWorkspace(Set<CriteriaValue> set) {
+                    int belongToWorkspace = 0;
+                    for (CriteriaValue cv : set) {
+                        if (cv.isWorkspace()) {
+                            belongToWorkspace++;
+                        }
+                    }
+                    return belongToWorkspace;
+                }
+            };
         Comparator<Set<CriteriaValue>> averageCriteriaValuesComparator =
             new Comparator<Set<CriteriaValue>>() {
                 @Override
@@ -350,7 +409,6 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
                     Set<CriteriaValue> s1,
                     Set<CriteriaValue> s2
                 ) {
-                    //CALCULATION_LOGGER.error("avg1 =" + avgCriteria(s1) + " avg2 =" + avgCriteria(s2));
                     return Double.compare(avgCriteria(s1), avgCriteria(s2));
                 }
 
@@ -362,8 +420,16 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
                     return totalCriteria / set.size();
                 }
             };
-        return averageCriteriaValuesComparator.compare(set1, set2) >= 0
-            ? set1
-            : set2;
+        workspaceComparingResult = workspacesComparator.compare(set1, set2);
+        if (workspaceComparingResult > 0) {
+            return set1;
+        } else if (workspaceComparingResult < 0) {
+            return set2;
+        } else {
+            avgCriteriaValueComparingResult =
+                averageCriteriaValuesComparator
+                    .compare(set1, set2);
+        }
+        return avgCriteriaValueComparingResult >= 0 ? set1 : set2;
     }
 }

@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import ua.edu.sumdu.elit.in71.birintsev.ClassBitmap;
 import ua.edu.sumdu.elit.in71.birintsev.CriteriaValue;
 import ua.edu.sumdu.elit.in71.birintsev.services.ClassBitmapService;
+import ua.edu.sumdu.elit.in71.birintsev.services.MathService;
 import ua.edu.sumdu.elit.in71.birintsev.services.StatisticVisualizationService;
 import ua.edu.sumdu.elit.in71.birintsev.services.impl.quickchart.QuickChartPlotRequest;
 import static ua.edu.sumdu.elit.in71.birintsev.services.impl.RecognizerTrainerImpl.CALCULATION_LOGGER;
@@ -30,7 +31,7 @@ import static ua.edu.sumdu.elit.in71.birintsev.services.impl.RecognizerTrainerIm
 public class StatisticVisualizationServiceImpl
 implements StatisticVisualizationService {
 
-    //private final MathService mathService;
+    private final MathService mathService;
 
     private final ClassBitmapService classBitmapService;
 
@@ -106,6 +107,22 @@ implements StatisticVisualizationService {
             CALCULATION_LOGGER.error(e);
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Override
+    public URL createMarginCorridorPlot(ClassBitmap baseClass) {
+        int margin = baseClass.getMargin();
+        double[] mean = mathService
+            .mean(
+                baseClass
+                    .getRecognitionClass()
+                    .getGrayScaleImage()
+            );
+        return createMarginCorridorPlot(
+            mathService.plus(mean, -margin),
+            mean,
+            mathService.plus(mean, margin)
+        );
     }
 
     private URL send(QuickChartPlotRequest request) {

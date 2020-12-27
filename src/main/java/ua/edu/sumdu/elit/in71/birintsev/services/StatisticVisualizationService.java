@@ -37,6 +37,19 @@ public interface StatisticVisualizationService {
     );
 
     /**
+     * This method is a handy wrapper for
+     * {@link #createMarginCorridorPlot(double[], double[], double[])}
+     * <p>
+     * Calculates {@code bottomBorder}, {@code mean} and {@code topBorder}
+     * parameters for the wrapped method.
+     *
+     * @param  baseClass a source class for calculating the parameters
+     * @return           a location of created plot
+     * @see              #createMarginCorridorPlot(double[], double[], double[])
+     * */
+    URL createMarginCorridorPlot(ClassBitmap baseClass);
+
+    /**
      * Creates a black&white resource (e.g. an image) that represents
      * passed bitmap.
      * <p>
