@@ -9,7 +9,9 @@ import ua.edu.sumdu.elit.in71.birintsev.CriteriaValue;
 public interface StatisticVisualizationService {
 
     /**
-     * Builds a plot of criteria values and returns
+     * Builds a plot of criteria values and returns its URL
+     *
+     * Margin optimization
      *
      * @param  source         source data for plot creation.
      *                        this parameter represents margin values
@@ -72,4 +74,34 @@ public interface StatisticVisualizationService {
      * @return             a location of created resource
      * */
     URL visualizeReferenceVectorOf(ClassBitmap classBitmap);
+
+    /**
+     * Builds a plot of criteria values for each radius
+     *
+     * Radius optimization
+     *
+     * @param  source         source data for plot creation.
+     *                        this parameter represents radius values
+     *                        mapped to criteria values
+     *                        for the same recognition class
+     * @return                a location of created plot
+     *                        (image, HTML or other format)
+     * */
+    URL createWorkspaceRadiusPlot(Map<Integer, CriteriaValue> source);
+
+    /**
+     * A handy overridden method for {@link #createWorkspacePlot}
+     * that calculates criteria values
+     * depending on all the possible radius values automatically
+     *
+     * @param criteriaValue a container with information for getting max radius
+     *                      and criteria method
+     *                      (see {@link #createWorkspaceRadiusPlot(Map)
+     *                      the method} parameters))
+     * @return              a location of created plot
+     *                      (image, HTML or other format)
+     *
+     * @see                 ua.edu.sumdu.elit.in71.birintsev.services.criteria.CriteriaMethod
+     * */
+    URL createWorkspaceRadiusPlot(CriteriaValue criteriaValue);
 }

@@ -41,7 +41,7 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
         "CALCULATION_LOGGER"
     );
 
-    private static final double MIN_DISTINGUISH_PERCENTAGE = 0.5;
+    public static final double MIN_DISTINGUISH_PERCENTAGE = 0.5;
 
     private final StatisticVisualizationService statisticVisualizationService;
 
@@ -241,6 +241,11 @@ public class RecognizerTrainerImpl implements RecognizerTrainer {
                     + "Class bitmap: "
                     + statisticVisualizationService.visualizeBitmap(
                         classBitmap
+                    )
+                    // radius optimization plot
+                    + "Radius optimization plot: "
+                    + statisticVisualizationService.createWorkspaceRadiusPlot(
+                        criteriaValue
                     )
             );
         }

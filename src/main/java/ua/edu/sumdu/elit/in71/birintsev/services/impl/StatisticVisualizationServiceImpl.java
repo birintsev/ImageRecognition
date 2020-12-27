@@ -13,6 +13,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
@@ -23,8 +24,10 @@ import ua.edu.sumdu.elit.in71.birintsev.CriteriaValue;
 import ua.edu.sumdu.elit.in71.birintsev.services.ClassBitmapService;
 import ua.edu.sumdu.elit.in71.birintsev.services.MathService;
 import ua.edu.sumdu.elit.in71.birintsev.services.StatisticVisualizationService;
+import ua.edu.sumdu.elit.in71.birintsev.services.criteria.CriteriaMethod;
 import ua.edu.sumdu.elit.in71.birintsev.services.impl.quickchart.QuickChartPlotRequest;
 import static ua.edu.sumdu.elit.in71.birintsev.services.impl.RecognizerTrainerImpl.CALCULATION_LOGGER;
+import static ua.edu.sumdu.elit.in71.birintsev.services.impl.RecognizerTrainerImpl.MIN_DISTINGUISH_PERCENTAGE;
 
 @Service
 @AllArgsConstructor
@@ -125,6 +128,46 @@ implements StatisticVisualizationService {
         );
     }
 
+    @Override
+    public URL createWorkspaceRadiusPlot(Map<Integer, CriteriaValue> source) {
+        return send(
+            buildRequestForWorkspaceByRadiusPlot(source)
+        );
+    }
+
+    @Override
+    public URL createWorkspaceRadiusPlot(CriteriaValue bestCriteria) {
+        return createWorkspaceRadiusPlot(
+            calcCriteriaValuesOfPossibleRadiuses(
+                bestCriteria
+            )
+        );
+    }
+
+    private Map<Integer, CriteriaValue> calcCriteriaValuesOfPossibleRadiuses(
+        CriteriaValue bestCriteria
+    ) {
+        Map<Integer, CriteriaValue> source = new HashMap<>();
+        CriteriaMethod criteriaMethod = bestCriteria.getCriteriaMethod();
+        int maxRadius =
+            bestCriteria
+                .getNeighbourClasses()
+                .getClassBitmap()
+                .getBitmap()[0]
+                .length;
+        for (int radius = 0; radius <= maxRadius; radius++) {
+            source.put(
+                radius,
+                criteriaMethod.getFor(
+                    radius,
+                    bestCriteria.getNeighbourClasses(),
+                    MIN_DISTINGUISH_PERCENTAGE
+                )
+            );
+        }
+        return source;
+    }
+
     private URL send(QuickChartPlotRequest request) {
         try {
             QuickChart chart = new QuickChart();
@@ -138,6 +181,59 @@ implements StatisticVisualizationService {
             CALCULATION_LOGGER.error(e);
             throw new UncheckedIOException(e);
         }
+    }
+
+    private QuickChartPlotRequest buildRequestForWorkspaceByRadiusPlot(
+        Map<Integer, CriteriaValue> source
+    ) {
+        return new QuickChartPlotRequest(
+            source.keySet()
+                .stream()
+                .sorted()
+                .collect(
+                    Collectors.toList()
+                )
+            ,
+            source.entrySet()
+                .stream()
+                .sorted(
+                    Comparator.comparingInt(
+                        Map.Entry::getKey
+                    )
+                )
+                .map(
+                    kv -> kv.getValue().getCriteria()
+                )
+                .collect(
+                    Collectors.toList()
+                ),
+            source.entrySet()
+                .stream()
+                .sorted(
+                    Comparator.comparingInt(
+                        Map.Entry::getKey
+                    )
+                )
+                .map(
+                    kv -> kv.getValue().isWorkspace()
+                )
+                .collect(
+                    Collectors.toList()
+                ),
+            source.entrySet()
+                .stream()
+                .findAny()
+                .map(
+                    kv -> kv
+                        .getValue()
+                        .getNeighbourClasses()
+                        .getClassBitmap()
+                        .getRecognitionClass()
+                        .getImageFile()
+                        .getName()
+                )
+                .orElse("")
+        );
     }
 
     private QuickChartPlotRequest buildRequestForWorkspacePlot(
